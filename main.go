@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"da/crypter"
 	"flag"
 	"fmt"
@@ -77,7 +78,7 @@ func main() {
 	}
 
 	if *outfile != "" {
-		wfp, err := os.OpenFile(*outfile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		wfp, err := os.Create(*outfile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -93,7 +94,9 @@ func main() {
 }
 
 func encrypt(content, secret string) (string, error) {
-	s, err := crypter.EncryptECB(content, secret)
+	key := sha256.Sum256([]byte(secret))
+
+	s, err := crypter.EncryptECB(content, string(key[:]))
 	if err != nil {
 		fmt.Print(err)
 		return "", err
@@ -103,7 +106,8 @@ func encrypt(content, secret string) (string, error) {
 }
 
 func decrypt(data, secret string) (string, error) {
-	s, err := crypter.DecryptECB(data, secret)
+	key := sha256.Sum256([]byte(secret))
+	s, err := crypter.DecryptECB(data, string(key[:]))
 	if err != nil {
 		fmt.Print(err)
 		return "", err
@@ -115,6 +119,7 @@ func decrypt(data, secret string) (string, error) {
 func readline(r io.Reader, handler func(string)) error {
 	rb := bufio.NewReader(r)
 	for {
+		// ATTENTION 读取不含换行符的单行数据时, 不能认定为是一条有效的数据
 		line, err := rb.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
