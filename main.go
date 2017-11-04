@@ -119,10 +119,13 @@ func decrypt(data, secret string) (string, error) {
 func readline(r io.Reader, handler func(string)) error {
 	rb := bufio.NewReader(r)
 	for {
-		// ATTENTION 读取不含换行符的单行数据时, 不能认定为是一条有效的数据
 		line, err := rb.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
+				if str := strings.TrimSpace(line); str != "" {
+					handler(str)
+				}
+
 				return nil
 			}
 			return err
@@ -130,8 +133,6 @@ func readline(r io.Reader, handler func(string)) error {
 
 		handler(strings.TrimSpace(line))
 	}
-
-	return nil
 }
 
 func writelines(w io.Writer, contents []string) error {
